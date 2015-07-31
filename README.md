@@ -11,7 +11,7 @@
 	 that's what it is.
 
 4. Run once per hour:
-    0 * * * *       $HOME/google-doc-watcher/google-doc-watcher
+    0 * * * *       $HOME/google-doc-watcher/google-doc-watcher -q --smtp-host your-smtp-host --smtp-user user --smtp-pass secret
 
 #Note:
 When run twice in the same minute, it re-downloads all file formats but
