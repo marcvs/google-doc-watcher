@@ -9,3 +9,10 @@
 3. run $HOME/google-doc-watcher/google-doc-watcher
    - Upon first run will email you the full diff. Call it bug or feature
 	 that's what it is.
+
+4. Run once per hour:
+    0 * * * *       $HOME/google-doc-watcher/google-doc-watcher
+
+#Note:
+When run twice in the same minute, it re-downloads all file formats but
+does not send a diff email.
