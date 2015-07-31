@@ -36,6 +36,14 @@ parser.add_argument('--colordiffOptions', dest='colordiffOptions',
 					default='-u7')
 parser.add_argument('--ansi2html', dest='path_ansitohtml',
 					default=defaultpath+"/ansi2html.sh")
+parser.add_argument('--smtp-user', '-u', dest='smtpUser',
+					default="")
+parser.add_argument('--smtp-pass', '-p', dest='smtpPass',
+					default="")
+parser.add_argument('--smtp-host', '-s', dest='smtpHost',
+					default="")
+parser.add_argument('--quiet', '-q', dest='quiet', action='store_true',
+					default=False)
 
 args = parser.parse_args()
 
@@ -54,7 +62,8 @@ def downloadFromGoogleDoc(resourceId, fileFormat, outputBaseFileWithDate):
 	file.close()
 	if args.verbose:
 		for file in (glob.glob(args.basedir+"/"+outputBaseFileWithDate+"*")):
-			print "=> %s" %file
+			if not args.quiet:
+				print "=> %s" %file
 
 def  ANewVersionWasDownloaded(outputBaseFile):
 	retVal = True
@@ -68,7 +77,8 @@ def  ANewVersionWasDownloaded(outputBaseFile):
 	pre_previous_fileversion = ""
 	for (fileversion, hashvalue) in hashes:
 		if args.verbose:
-			print (("\n%s : %s") % (fileversion, hashvalue))
+			if not args.quiet:
+				stdout.write (("\n%s : %s") % (fileversion, hashvalue))
 		if (previous_hashvalue == hashvalue):
 			os.remove (fileversion)
 			retVal = False
@@ -79,28 +89,43 @@ def  ANewVersionWasDownloaded(outputBaseFile):
 	return retVal, os.path.basename(pre_previous_fileversion)
 
 def sendMail(FROM, TO, SUBJECT, CONTENT):
-	now = datetime.now(tz=pytz.timezone(os.getenv("TZ")))
-	now = now.strftime("%a, %d %b %Y %H:%M:%S %z")
+	try:
+		now = datetime.now(tz=pytz.timezone(os.getenv("TZ")))
+	except:
+		now = datetime.now(tz=pytz.timezone('CET'))
 
-	# Import the email modules we'll need
-	from email.mime.text import MIMEText
-	from email.mime.multipart import MIMEMultipart
+	if args.smtpHost == "":
+		print "Error: smtp host not configured, cannot send email. Use the --smtp-host parameter"
 
-	htmlcontent = MIMEText(CONTENT, "html")
-	msg = MIMEMultipart()
+	else:
+		now = now.strftime("%a, %d %b %Y %H:%M:%S %z")
 
-	msg['Subject'] = SUBJECT
-	msg['From'] = FROM
-	msg['To'] = TO
-	msg['Date'] = now
-	msg.preamble = "This is an email"
-	msg.attach(htmlcontent)
+		# Import the email modules we'll need
+		from email.mime.text import MIMEText
+		from email.mime.multipart import MIMEMultipart
 
-	# Send the message via our own SMTP server, but don't include the
-	# envelope header.
-	s = smtplib.SMTP('hardt-it.de')
-	s.sendmail(FROM, TO , msg.as_string())
-	s.quit()
+		htmlcontent = MIMEText(CONTENT, "html")
+		msg = MIMEMultipart()
+
+		msg['Subject'] = SUBJECT
+		msg['From'] = FROM
+		msg['To'] = TO
+		msg['Date'] = now
+		msg.preamble = "This is an email"
+		msg.attach(htmlcontent)
+
+		# Send the message via our own SMTP server, but don't include the
+		# envelope header.
+		s = smtplib.SMTP(args.smtpHost)
+		if (args.smtpUser !=0) and (args.smtpPass !=0):
+			s.login(args.smtpUser, args.smtpPass)
+		try:
+			if s.sendmail(FROM, TO , msg.as_string()):
+				if not args.quiet:
+					print "email(s) sent"
+		except:
+			print ("Error sending email, please check your settings")
+		s.quit()
 
 def shellcall(commandline):
 	tmpout = "/tmp/google-doc-downloader-"+os.getpid().__str__()+"out"
@@ -112,41 +137,45 @@ def shellcall(commandline):
 	output = open(tmpout, "r").read()
 	errors = open(tmperr, "r").read()
 
-	os.remove (tmpout)
-	os.remove (tmperr)
+	if not args.verbose:
+		os.remove (tmpout)
+		os.remove (tmperr)
 
 	return retval, output, errors
 
 def  mailLatestDiff(outputBaseFile, newFile, oldFile, emails):
 	fileFormat = 'txt'
-	print "\nEmailing diffs for %s to" %(outputBaseFile)
+	if not args.quiet:
+		print "\nEmailing diffs for %s to" %(outputBaseFile)
 	width = str(args.mailOutputWidth)
 
 	tmp1 = "/tmp/google-doc-downloader-"+os.getpid().__str__()+outputBaseFile+"-old"
 	tmp2 = "/tmp/google-doc-downloader-"+os.getpid().__str__()+outputBaseFile+"-new"
 
 	if args.mailOutputReflow:
-		shellcall ("cat "+oldFile+" | par "+width+" > "+tmp1)
-		shellcall ("cat "+newFile+" | par "+width+" > "+tmp2)
+		shellcall ("cat "+oldFile+" | fold -s -w "+width+" > "+tmp1)
+		shellcall ("cat "+newFile+" | fold -s -w "+width+" > "+tmp2)
 	else:
 		shellcall ("cat "+oldFile+" > "+tmp1)
 		shellcall ("cat "+newFile+" > "+tmp2)
 
 	(retval, output, errors) = shellcall ("colordiff "+args.colordiffOptions+" "+tmp1+" "+tmp2+" | "+ args.path_ansitohtml)
 
-	os.remove (tmp1)
-	os.remove (tmp2)
+	if not args.verbose:
+		os.remove (tmp1)
+		os.remove (tmp2)
 
 	for email in emails.split(":"):
-		print ("    "+email)
+		if not args.quiet:
+			print ("    "+email)
 		sendMail ("marcus@hardt-it.de", email, "Updates on %s" % outputBaseFile, output)
 
-	print "email(s) sent"
 
 def downloadFilesFromRc():
 	now = datetime.now()
 	now = now.strftime("%Y-%m-%d-%H:%M")
-	print ("Checking for updates")
+	if not args.quiet:
+		print ("Checking for updates")
 	for line in fileinput.input(args.configfile):
 		# read line of config file
 		if search ("#", line):
@@ -174,8 +203,9 @@ You have probably not provided enough options in the config file. The template i
 		# derive config based values
 		outputBaseFileWithDate=outputBaseFile+"--"+now
 
-		stdout.write ("%s: " % (outputBaseFile))
-		stdout.flush()
+		if not args.quiet:
+			stdout.write ("%s: " % (outputBaseFile))
+			stdout.flush()
 
 		# download txt version
 		downloadFromGoogleDoc(resourceId, 'txt', outputBaseFileWithDate)
@@ -184,9 +214,11 @@ You have probably not provided enough options in the config file. The template i
 		(newFileAvailable, secondLastFileVersion) = ANewVersionWasDownloaded(outputBaseFile)
 		if newFileAvailable:
 			# if not dupe: download other formats
-			stdout.write("Fetching new version: ")
+			if not args.quiet:
+				stdout.write("Fetching new version: ")
 			for fileFormat in fileFormats.split(":"):
-				stdout.write ("[%s] " % fileFormat); stdout.flush()
+				if not args.quiet:
+					stdout.write ("[%s] " % fileFormat); stdout.flush()
 				downloadFromGoogleDoc(resourceId, fileFormat, outputBaseFileWithDate)
 
 			# send email with latest diff
@@ -195,10 +227,12 @@ You have probably not provided enough options in the config file. The template i
 			if (newFile != oldFile) & (oldFile != ""):
 				mailLatestDiff(outputBaseFile, newFile, oldFile, emails)
 		else:
-			stdout.write ("No changes")
+			if not args.quiet:
+				stdout.write ("No changes")
 
 
-		print ("")
+		if not args.quiet:
+			print ("")
 
 downloadFilesFromRc()
 
