@@ -15,14 +15,14 @@ import subprocess
 import pytz
 
 
-defaultpath = os.getenv("HOME")+"/google-docs"
+defaultpath = os.getenv("HOME")+"/google-doc-watcher"
 
 
 parser = argparse.ArgumentParser(description='batterymonitor')
 parser.add_argument('--verbose','-v', dest='verbose', action='count',
 					default=0)
 parser.add_argument('--config','-c', dest='configfile',
-					default=os.getenv("HOME")+"/.google-doc-downloaderrc")
+					default=os.getenv("HOME")+"/.google-doc-watcherrc")
 parser.add_argument('--email','-e', dest='email',
 					default="marcus@hardt-it.de")
 parser.add_argument('--outputdir','-o', dest='basedir',
@@ -106,7 +106,7 @@ def shellcall(commandline):
 	tmpout = "/tmp/google-doc-downloader-"+os.getpid().__str__()+"out"
 	tmperr = "/tmp/google-doc-downloader-"+os.getpid().__str__()+"err"
 
-	retval = subprocess.call(commandline, shell=True, 
+	retval = subprocess.call(commandline, shell=True,
 					stdout = open(tmpout, "w"), stderr = open(tmperr, "w"))
 
 	output = open(tmpout, "r").read()
@@ -166,8 +166,8 @@ Error Parsing the config:
 You have probably not provided enough options in the config file. The template is as follows:
 
 # google-doc-id                 outputfile      fileFormat # the txt version is always downloaded
-1qtjlH2NzuOHkN11wJ9nz_NmddVHIGKS9BdDRqP1eOe4    aarc-amsterdam-report  pdf:doc:odt:docx:rtf:html marcus@hardt-it.de:hardt@kit.edu
-1F8PI8q0KxtOg-GVqt17AR8K4UK-CvLwz4wTfcKmNY_8    indigo-d4.2             docx marcus@hardt-it.de:hardt@kit.edu
+1qtjlH2NzsdfsSD1wJ9nz_NmddVHIGKS9BdDRqP1eOe4    important-repor        pdf:doc:odt:docx:rtf:html jon@doe.org:foo@bar.com:bart@simpson.gov
+1F8PI8q0KxtasdfsdfsdfRSDFSDFCvLwz4wTfcKmNY_8    example-doc             docx jon@doe.org
 
 		""")
 
@@ -190,7 +190,10 @@ You have probably not provided enough options in the config file. The template i
 				downloadFromGoogleDoc(resourceId, fileFormat, outputBaseFileWithDate)
 
 			# send email with latest diff
-			mailLatestDiff(outputBaseFile, outputBaseFileWithDate+".txt", secondLastFileVersion, emails)
+			newFile = outputBaseFileWithDate+".txt"
+			oldFile = secondLastFileVersion
+			if (newFile != oldFile) & (oldFile != ""):
+				mailLatestDiff(outputBaseFile, newFile, oldFile, emails)
 		else:
 			stdout.write ("No changes")
 
