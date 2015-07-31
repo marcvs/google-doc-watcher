@@ -18,7 +18,7 @@ import pytz
 defaultpath = os.getenv("HOME")+"/google-doc-watcher"
 
 
-parser = argparse.ArgumentParser(description='batterymonitor')
+parser = argparse.ArgumentParser(description='google-doc-watcher')
 parser.add_argument('--verbose','-v', dest='verbose', action='count',
 					default=0)
 parser.add_argument('--config','-c', dest='configfile',
