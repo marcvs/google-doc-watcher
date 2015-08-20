@@ -168,7 +168,7 @@ def  mailLatestDiff(outputBaseFile, newFile, oldFile, emails):
 	for email in emails.split(":"):
 		if not args.quiet:
 			print ("    "+email)
-		sendMail ("marcus@hardt-it.de", email, "Updates on %s" % outputBaseFile, output)
+		sendMail ("donal@duck.com", email, "Updates on %s" % outputBaseFile, output)
 
 
 def downloadFilesFromRc():
