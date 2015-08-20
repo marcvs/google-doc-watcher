@@ -23,8 +23,8 @@ parser.add_argument('--verbose','-v', dest='verbose', action='count',
 					default=0)
 parser.add_argument('--config','-c', dest='configfile',
 					default=os.getenv("HOME")+"/.google-doc-watcherrc")
-parser.add_argument('--email','-e', dest='email',
-					default="marcus@hardt-it.de")
+parser.add_argument('--email-from','-e', dest='emailFrom',
+					default="donald@duck.com")
 parser.add_argument('--outputdir','-o', dest='basedir',
 					default=defaultpath)
 					#default=os.getenv("HOME")+"/.google-doc-downloader")
@@ -168,7 +168,7 @@ def  mailLatestDiff(outputBaseFile, newFile, oldFile, emails):
 	for email in emails.split(":"):
 		if not args.quiet:
 			print ("    "+email)
-		sendMail ("donal@duck.com", email, "Updates on %s" % outputBaseFile, output)
+		sendMail (args.emailFrom, email, "Updates on %s" % outputBaseFile, output)
 
 
 def downloadFilesFromRc():
