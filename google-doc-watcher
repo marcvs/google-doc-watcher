@@ -9,6 +9,7 @@ import os
 import argparse
 import glob
 from sys import stdout
+from sys import argv 
 import smtplib
 import subprocess
 # some timezone stuff
@@ -16,7 +17,6 @@ import pytz
 
 
 defaultpath = os.getenv("HOME")+"/google-doc-watcher"
-
 
 parser = argparse.ArgumentParser(description='google-doc-watcher')
 parser.add_argument('--verbose','-v', dest='verbose', action='count',
@@ -27,7 +27,6 @@ parser.add_argument('--email-from','-e', dest='emailFrom',
 					default="donald@duck.com")
 parser.add_argument('--outputdir','-o', dest='basedir',
 					default=defaultpath)
-					#default=os.getenv("HOME")+"/.google-doc-downloader")
 parser.add_argument('--width','-w', dest='mailOutputWidth',
 					default=66)
 parser.add_argument('--no-reflow', dest='mailOutputReflow',
@@ -63,7 +62,7 @@ def downloadFromGoogleDoc(resourceId, fileFormat, outputBaseFileWithDate):
 	if args.verbose:
 		for file in (glob.glob(args.basedir+"/"+outputBaseFileWithDate+"*")):
 			if not args.quiet:
-				print "=> %s" %file
+				print "\n=> %s" %file
 
 def  ANewVersionWasDownloaded(outputBaseFile):
 	retVal = True
@@ -228,7 +227,7 @@ You have probably not provided enough options in the config file. The template i
 				mailLatestDiff(outputBaseFile, newFile, oldFile, emails)
 		else:
 			if not args.quiet:
-				stdout.write ("No changes")
+				stdout.write (" => No changes")
 
 
 		if not args.quiet:
